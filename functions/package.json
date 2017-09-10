@@ -1,0 +1,36 @@
+{
+  "name": "city-bike-finder",
+  "description": "City bike finder",
+  "version": "0.0.1",
+  "private": true,
+  "license": "Apache Version 2.0",
+  "author": "Kristian Lund",
+  "engines": {
+    "node": "~6.0"
+  },
+  "scripts": {
+    "lint": "eslint --fix \"**/*.js\"",
+    "start": "firebase serve --only functions",
+    "deploy": "firebase deploy --only functions",
+    "test": "npm run lint"
+  },
+  "dependencies": {
+    "actions-on-google": "^1.1.0",
+    "async": "^2.5.0",
+    "body-parser": "^1.17.2",
+    "express": "^4.15.3",
+    "firebase-admin": "^4.2.1",
+    "firebase-functions": "^0.5.8",
+    "geolib": "^2.0.22",
+    "request": "^2.81.0"
+  },
+  "devDependencies": {
+    "eslint": "^3.19.0",
+    "eslint-config-semistandard": "^11.0.0",
+    "eslint-config-standard": "^10.2.1",
+    "eslint-plugin-import": "^2.6.1",
+    "eslint-plugin-node": "^5.1.0",
+    "eslint-plugin-promise": "^3.5.0",
+    "eslint-plugin-standard": "^3.0.1"
+  }
+}
