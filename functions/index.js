@@ -9,9 +9,6 @@ const requestHttp = require('request');
 const async = require('async');
 const geolib = require('geolib');
 
-const testLat = '59.938893';
-const testLong = '10.722658';
-
 const bikeRootUrl = 'https://oslobysykkel.no/api/v1';
 
 const CLIENT_IDENTIFIER = 'f2f56a90378a3f11b77794a4640fca8a';
@@ -25,12 +22,12 @@ const LOCATION_DATA = 'location';
 
 function encodeAsFirebaseKey (string) {
   return string.replace(/%/g, '%25')
-        .replace(/\./g, '%2E')
-        .replace(/#/g, '%23')
-        .replace(/\$/g, '%24')
-        .replace(/\//g, '%2F')
-        .replace(/\[/g, '%5B')
-        .replace(/\]/g, '%5D');
+    .replace(/\./g, '%2E')
+    .replace(/#/g, '%23')
+    .replace(/\$/g, '%24')
+    .replace(/\//g, '%2F')
+    .replace(/\[/g, '%5B')
+    .replace(/\]/g, '%5D');
 }
 
 exports.yourAction = functions.https.onRequest((request, response) => {
@@ -39,9 +36,7 @@ exports.yourAction = functions.https.onRequest((request, response) => {
   console.log('Request body: ' + JSON.stringify(request.body));
 
   function requestLocationPermission (app) {
-    let permission;
-        // If the request comes from a phone, we can't use coarse location.
-    permission = app.SupportedPermissions.DEVICE_PRECISE_LOCATION;
+    let permission = app.SupportedPermissions.DEVICE_PRECISE_LOCATION;
     app.data.permission = permission;
     return requestPermission(app, permission, LOCATION_DATA);
   }
@@ -50,13 +45,13 @@ exports.yourAction = functions.https.onRequest((request, response) => {
     return new Promise(function (resolve, reject) {
       let userId = app.getUser().user_id;
       firebaseAdmin.database().ref('users/' + encodeAsFirebaseKey(userId))
-                .once('value', function (data) {
-                  if (data && data.val() && data.val()[firebaseKey]) {
-                    resolve(callBikeAPI);
-                  } else {
-                    resolve(app.askForPermission('To find the closest bike', permission));
-                  }
-                });
+        .once('value', function (data) {
+          if (data && data.val() && data.val()[firebaseKey]) {
+            resolve(callBikeAPI);
+          } else {
+            resolve(app.askForPermission('To find the closest bike', permission));
+          }
+        });
     });
   }
 
@@ -95,38 +90,40 @@ exports.yourAction = functions.https.onRequest((request, response) => {
     return combinedArr;
   }
 
+  function mapToSortedDistanceList (body) {
+    let sortedDistArr = [];
+    if (app.isPermissionGranted()) {
+      let deviceCoordinates = app.getDeviceLocation().coordinates;
+      let info = JSON.parse(body);
+      console.log('Sorted arr: ' + sortedDistArr);
+      info.stations.forEach(
+        function (value) {
+          let bikePos = {latitude: value.bounds[0].latitude, longitude: value.bounds[0].longitude};
+          // Get distance
+          let eDist = geolib.getDistance(deviceCoordinates, bikePos);
+          sortedDistArr.push({id: value.id, name: value.title + ' ' + value.subtitle, dist: eDist});
+        }
+      );
+      sortArr(sortedDistArr);
+    }
+    return sortedDistArr;
+  }
+
   function sortArr (array) {
     array.sort(function (a, b) {
       return a.dist - b.dist;
     });
   }
 
-  function mapToSortedDistanceList (body) {
-    let myPos = {latitude: testLat, longitude: testLong};
-    let sortedDistArr = [];
-    let info = JSON.parse(body);
-    console.log('Sorted arr: ' + sortedDistArr);
-    info.stations.forEach(function (value) {
-      let bikePos = {latitude: value.bounds[0].latitude, longitude: value.bounds[0].longitude};
-                // Get distance
-      let eDist = geolib.getDistance(myPos, bikePos);
-      console.log('eDist is: ' + eDist);
-      sortedDistArr.push({id: value.id, name: value.title + ' ' + value.subtitle, dist: eDist});
-    }
-        );
-    sortArr(sortedDistArr);
-    return sortedDistArr;
-  }
-
   function callBikeAPI (app) {
     if (app.isPermissionGranted()) {
-      let deviceCoordinates = app.getDeviceLocation().coordinates;
       async.parallel([
         getStations,
         callAvailableBikes
       ], function (err, result) {
-        console.log('errors: ' + err);
-        console.log('Result before combine: 0:' + result[0] + ' 1:' + result[1]);
+        if (err !== undefined) {
+          console.log('error:', err); // Print the error if one occurred
+        }
         let combinedList = combineAvailabilityStations(result[0], result[1]);
         console.log(combinedList);
         app.tell('The closest station with bikes is ' + combinedList[0].name + '. It has ' + combinedList[0].availableBikes + ' bikes available');
@@ -143,7 +140,6 @@ exports.yourAction = functions.https.onRequest((request, response) => {
         callback(null, mapToSortedDistanceList(body));
       } else {
         console.log('error:', error); // Print the error if one occurred
-        callback('error: ' + error, null);
       }
     }
     let options = {
@@ -157,11 +153,11 @@ exports.yourAction = functions.https.onRequest((request, response) => {
   }
 
   function greetUser (app) {
-    app.ask(`<speak>Welcome to city bike finder!</speak>`);
+    app.ask(`<speak>Welcome to bike finder!</speak>`);
   }
 
   function callBikeError (app) {
-        // User did not grant permission or reverse geocoding failed.
+    // User did not grant permission or reverse geocoding failed.
     app.tell(`<speak>I am sorry but I failed to find any nearby bikes.</speak>`);
   }
 
